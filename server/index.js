@@ -62,7 +62,8 @@ io.on('connection', (socket) => {
             io.to(roomId).emit('game_start', roomSummary);
             
             if (roomSummary.timeLimit > 0) {
-                setTimeout(() => {
+                const room = roomManager.getOrCreateRoom(roomId);
+                room.timerId = setTimeout(() => {
                     if (roomManager.forceEndGame(roomId)) {
                         io.to(roomId).emit('game_over', {
                             targetWord: roomManager.getOrCreateRoom(roomId).targetWord,

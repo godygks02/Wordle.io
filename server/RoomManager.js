@@ -18,7 +18,8 @@ class RoomManager {
                 endTime: null,
                 hostId: null,
                 allowSurrender: false,
-                finishers: 0
+                finishers: 0,
+                timerId: null
             });
         }
         return this.rooms.get(roomId);
@@ -220,6 +221,10 @@ class RoomManager {
 
         if (allFinished && room.state === 'Playing') {
             room.state = 'Finished';
+            if (room.timerId) {
+                clearTimeout(room.timerId);
+                room.timerId = null;
+            }
             this.calculateRankings(room);
         }
         return allFinished;
@@ -237,6 +242,10 @@ class RoomManager {
         }
         
         room.state = 'Finished';
+        if (room.timerId) {
+            clearTimeout(room.timerId);
+            room.timerId = null;
+        }
         this.calculateRankings(room);
         return true;
     }
@@ -249,6 +258,11 @@ class RoomManager {
         room.targetWord = null;
         room.startTime = null;
         room.endTime = null;
+        room.finishers = 0;
+        if (room.timerId) {
+            clearTimeout(room.timerId);
+            room.timerId = null;
+        }
         
         for (const [_, player] of room.players) {
             player.isReady = false;
