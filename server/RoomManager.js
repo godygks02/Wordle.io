@@ -75,7 +75,7 @@ class RoomManager {
         }
     }
 
-    setReady(roomId, socketId, isReady) {
+    setReady(roomId, socketId, isReady, onTimeOut) {
         const room = this.rooms.get(roomId);
         if (!room || room.state !== 'Waiting') return false;
 
@@ -84,7 +84,7 @@ class RoomManager {
             player.isReady = isReady;
         }
 
-        return this.checkAllReady(roomId);
+        return this.checkAllReady(roomId, onTimeOut);
     }
 
     updateSettings(roomId, socketId, settings) {
@@ -97,7 +97,7 @@ class RoomManager {
         return true;
     }
 
-    checkAllReady(roomId) {
+    checkAllReady(roomId, onTimeOut) {
         const room = this.rooms.get(roomId);
         if (!room || room.players.size === 0) return false;
 
@@ -110,13 +110,13 @@ class RoomManager {
         }
 
         if (allReady && room.players.size > 0) {
-            this.startGame(room);
+            this.startGame(room, onTimeOut);
             return true;
         }
         return false;
     }
 
-    startGame(room) {
+    startGame(room, onTimeOut) {
         room.state = 'Playing';
         room.targetWord = validator.getRandomTarget();
         room.startTime = Date.now();
@@ -131,6 +131,17 @@ class RoomManager {
             player.hasSurrendered = false;
             player.finishTime = null;
             player.score = null;
+            player.isReady = false;
+        }
+
+        // Start Server Timer
+        if (room.timeLimit > 0 && onTimeOut) {
+            if (room.timerId) clearTimeout(room.timerId);
+            room.timerId = setTimeout(() => {
+                if (this.forceEndGame(room.id)) {
+                    onTimeOut();
+                }
+            }, room.timeLimit * 1000);
         }
     }
 

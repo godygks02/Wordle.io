@@ -50,7 +50,12 @@ io.on('connection', (socket) => {
         const roomId = socket.data.roomId;
         if (!roomId) return;
 
-        const allReady = roomManager.setReady(roomId, socket.id, isReady);
+        const allReady = roomManager.setReady(roomId, socket.id, isReady, () => {
+            io.to(roomId).emit('game_over', {
+                targetWord: roomManager.getOrCreateRoom(roomId).targetWord,
+                leaderboard: roomManager.getLeaderboard(roomId)
+            });
+        });
         
         if (allReady) {
             // Game started!
@@ -60,18 +65,6 @@ io.on('connection', (socket) => {
             io.in(roomId).socketsLeave(`${roomId}_spectators`);
             
             io.to(roomId).emit('game_start', roomSummary);
-            
-            if (roomSummary.timeLimit > 0) {
-                const room = roomManager.getOrCreateRoom(roomId);
-                room.timerId = setTimeout(() => {
-                    if (roomManager.forceEndGame(roomId)) {
-                        io.to(roomId).emit('game_over', {
-                            targetWord: roomManager.getOrCreateRoom(roomId).targetWord,
-                            leaderboard: roomManager.getLeaderboard(roomId)
-                        });
-                    }
-                }, roomSummary.timeLimit * 1000);
-            }
         } else {
             io.to(roomId).emit('room_update', roomManager.getRoomSummary(roomId));
         }
