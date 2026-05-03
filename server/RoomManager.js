@@ -243,7 +243,7 @@ class RoomManager {
 
     resetRoom(roomId) {
         const room = this.rooms.get(roomId);
-        if (!room) return false;
+        if (!room || room.state === 'Waiting') return false;
         
         room.state = 'Waiting';
         room.targetWord = null;

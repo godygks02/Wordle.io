@@ -55,6 +55,10 @@ io.on('connection', (socket) => {
         if (allReady) {
             // Game started!
             const roomSummary = roomManager.getRoomSummary(roomId);
+            
+            // Everyone leaves spectator room for the new game
+            io.in(roomId).socketsLeave(`${roomId}_spectators`);
+            
             io.to(roomId).emit('game_start', roomSummary);
             
             if (roomSummary.timeLimit > 0) {
@@ -170,8 +174,13 @@ io.on('connection', (socket) => {
         const roomId = socket.data.roomId;
         if (!roomId) return;
         
+        socket.leave(`${roomId}_spectators`);
+        
         if (roomManager.resetRoom(roomId)) {
             io.to(roomId).emit('room_update', roomManager.getRoomSummary(roomId));
+        } else {
+            // If already reset, just sync for this player
+            socket.emit('room_update', roomManager.getRoomSummary(roomId));
         }
     });
 

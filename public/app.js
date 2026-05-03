@@ -144,7 +144,13 @@ function updateWaitingRoom(roomData) {
     }
     
     roomData.players.forEach(p => {
-        if (p.id === socket.id) myId = p.id;
+        if (p.id === socket.id) {
+            myId = p.id;
+            // Sync local isReady state with server
+            isReady = p.isReady;
+            readyBtn.textContent = isReady ? 'Cancel Ready' : 'Ready Up';
+            readyBtn.style.backgroundColor = isReady ? 'var(--gray-dark)' : 'var(--primary-color)';
+        }
         const hostCrown = p.id === roomData.hostId ? '👑' : '';
         const item = document.createElement('div');
         item.className = 'player-item';
