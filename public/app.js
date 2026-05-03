@@ -415,8 +415,8 @@ socket.on('guess_result', (res) => {
 
 socket.on('game_over', (data) => {
     if (timerInterval) clearInterval(timerInterval);
-    // Wait a moment for animations to finish before showing leaderboard
-    setTimeout(() => {
+    
+    const showLeaderboard = () => {
         switchView('leaderboard');
         document.getElementById('final-target-word').textContent = data.targetWord.toUpperCase();
         
@@ -455,7 +455,14 @@ socket.on('game_over', (data) => {
             `;
             list.appendChild(item);
         });
-    }, 2000);
+    };
+
+    if (data.reason === 'timeout') {
+        showLeaderboard();
+    } else {
+        // Wait a moment for final animations to finish
+        setTimeout(showLeaderboard, 1000);
+    }
 });
 
 // Play Again Button

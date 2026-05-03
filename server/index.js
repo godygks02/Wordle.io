@@ -53,7 +53,8 @@ io.on('connection', (socket) => {
         const allReady = roomManager.setReady(roomId, socket.id, isReady, () => {
             io.to(roomId).emit('game_over', {
                 targetWord: roomManager.getOrCreateRoom(roomId).targetWord,
-                leaderboard: roomManager.getLeaderboard(roomId)
+                leaderboard: roomManager.getLeaderboard(roomId),
+                reason: 'timeout'
             });
         });
         
@@ -108,7 +109,8 @@ io.on('connection', (socket) => {
             const targetWord = roomManager.rooms.get(roomId).targetWord;
             io.to(roomId).emit('game_over', {
                 leaderboard: roomManager.getLeaderboard(roomId),
-                targetWord: targetWord
+                targetWord: targetWord,
+                reason: 'finished'
             });
         }
     });
@@ -134,7 +136,8 @@ io.on('connection', (socket) => {
             const targetWord = roomManager.rooms.get(roomId).targetWord;
             io.to(roomId).emit('game_over', {
                 leaderboard: roomManager.getLeaderboard(roomId),
-                targetWord: targetWord
+                targetWord: targetWord,
+                reason: 'finished'
             });
         }
     });
@@ -156,7 +159,8 @@ io.on('connection', (socket) => {
                         const targetWord = roomManager.rooms.get(roomId).targetWord;
                         io.to(roomId).emit('game_over', {
                             leaderboard: roomManager.getLeaderboard(roomId),
-                            targetWord: targetWord
+                            targetWord: targetWord,
+                            reason: 'finished'
                         });
                     }
                 }
@@ -195,7 +199,8 @@ io.on('connection', (socket) => {
                         const targetWord = roomManager.rooms.get(roomId).targetWord;
                         io.to(roomId).emit('game_over', {
                             leaderboard: roomManager.getLeaderboard(roomId),
-                            targetWord: targetWord
+                            targetWord: targetWord,
+                            reason: 'finished'
                         });
                     }
                 }
