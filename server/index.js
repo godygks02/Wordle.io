@@ -45,6 +45,33 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('rejoin_room', ({ roomId, oldSocketId }) => {
+        const result = roomManager.rejoinRoom(roomId, oldSocketId, socket.id);
+        if (result.error) {
+            socket.emit('error', result.error);
+            return;
+        }
+
+        socket.join(roomId);
+        socket.data.roomId = roomId;
+
+        const room = roomManager.rooms.get(roomId);
+        
+        socket.emit('room_update', roomManager.getRoomSummary(roomId));
+        io.to(roomId).emit('room_update', roomManager.getRoomSummary(roomId));
+        
+        if (room.state === 'Playing') {
+            socket.join(`${roomId}_spectators`);
+            socket.emit('spectator_update', roomManager.getSpectatorData(roomId));
+        } else if (room.state === 'Finished') {
+            socket.emit('game_over', {
+                targetWord: room.targetWord,
+                leaderboard: roomManager.getLeaderboard(roomId),
+                reason: 'finished'
+            });
+        }
+    });
+
     // Toggle ready state
     socket.on('set_ready', (isReady) => {
         const roomId = socket.data.roomId;

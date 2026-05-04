@@ -276,12 +276,26 @@ function animateRow(rowIdx, colors, word) {
 
 
 // --- Socket Listeners ---
+socket.on('connect', () => {
+    if (currentRoom && myId) {
+        socket.emit('rejoin_room', { 
+            roomId: currentRoom.id, 
+            oldSocketId: myId
+        });
+    }
+});
+
 socket.on('error', (msg) => {
     document.getElementById('lobby-error').textContent = msg;
 });
 
 socket.on('room_update', (roomData) => {
     currentRoom = roomData;
+    
+    const me = roomData.players.find(p => p.id === socket.id);
+    if (me) {
+        myId = me.id;
+    }
     
     if (roomData.state === 'Waiting' && gameState !== 'waiting') {
         // Only force switch to waiting if we are not on the leaderboard
@@ -356,7 +370,8 @@ function renderSpectatorBoards(players) {
         container.className = 'spectator-board-container';
         
         let statusText = '';
-        if (p.isWin) statusText = ' - Finished';
+        if (p.connected === false) statusText = ' - Offline';
+        else if (p.isWin) statusText = ' - Finished';
         else if (p.hasSurrendered) statusText = ' - Surrendered';
         
         let boardHtml = `<div class="spectator-board">`;

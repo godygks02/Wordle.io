@@ -50,7 +50,8 @@ class RoomManager {
             isFinished: false,
             hasSurrendered: false,
             finishTime: null,
-            score: null
+            score: null,
+            connected: true
         });
 
         return { room };
@@ -59,20 +60,55 @@ class RoomManager {
     leaveRoom(roomId, socketId) {
         const room = this.rooms.get(roomId);
         if (room) {
-            room.players.delete(socketId);
-            if (room.players.size === 0) {
-                this.rooms.delete(roomId);
-            } else {
-                if (room.hostId === socketId) {
-                    // Reassign host to the first available player
-                    const nextHost = room.players.keys().next().value;
-                    room.hostId = nextHost;
-                }
-                if (room.state === 'Waiting') {
+            if (room.state === 'Waiting') {
+                room.players.delete(socketId);
+                if (room.players.size === 0) {
+                    this.rooms.delete(roomId);
+                } else {
+                    if (room.hostId === socketId) {
+                        // Reassign host to the first available player
+                        const nextHost = room.players.keys().next().value;
+                        room.hostId = nextHost;
+                    }
                     this.checkAllReady(roomId);
+                }
+            } else {
+                // Game is playing or finished. Keep the player data so they can reconnect.
+                const player = room.players.get(socketId);
+                if (player) {
+                    player.connected = false;
+                }
+                
+                let anyConnected = false;
+                for (const p of room.players.values()) {
+                    if (p.connected) anyConnected = true;
+                }
+                if (!anyConnected) {
+                    this.rooms.delete(roomId);
+                } else {
+                    this.checkAllFinished(roomId);
                 }
             }
         }
+    }
+
+    rejoinRoom(roomId, oldSocketId, newSocketId) {
+        const room = this.rooms.get(roomId);
+        if (!room) return { error: 'Room not found' };
+
+        const player = room.players.get(oldSocketId);
+        if (!player) return { error: 'Player not found in room' };
+
+        room.players.delete(oldSocketId);
+        player.id = newSocketId;
+        player.connected = true;
+        room.players.set(newSocketId, player);
+
+        if (room.hostId === oldSocketId) {
+            room.hostId = newSocketId;
+        }
+
+        return { success: true };
     }
 
     setReady(roomId, socketId, isReady, onTimeOut) {
@@ -214,7 +250,8 @@ class RoomManager {
             guesses: p.guesses, // Has both word and colors
             isFinished: p.isFinished,
             hasSurrendered: p.hasSurrendered,
-            isWin: p.finishTime !== Infinity && p.finishTime !== null && !p.hasSurrendered
+            isWin: p.finishTime !== Infinity && p.finishTime !== null && !p.hasSurrendered,
+            connected: p.connected
         }));
     }
 
@@ -338,6 +375,7 @@ class RoomManager {
                 guessCount: p.guesses.length,
                 isFinished: p.isFinished,
                 hasSurrendered: p.hasSurrendered,
+                connected: p.connected,
                 guesses: p.guesses.map(g => g.colors) // only send colors to prevent cheating
             }))
         };
